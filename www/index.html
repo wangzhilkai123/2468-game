@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#faf8ef">
+  <title>2468</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="title">2468</div>
+      <div class="scores">
+        <div class="score-box">
+          <div class="score-label">分数</div>
+          <div class="score-value" id="score">0</div>
+        </div>
+        <div class="score-box">
+          <div class="score-label">最高</div>
+          <div class="score-value" id="best">0</div>
+        </div>
+      </div>
+    </div>
+    <div class="controls">
+      <span class="desc">滑动屏幕或按方向键</span>
+      <button class="btn" id="restart">新游戏</button>
+    </div>
+    <canvas id="game"></canvas>
+  </div>
+
+  <script src="js/game.js"></script>
+  <script src="js/render.js"></script>
+  <script>
+    (function() {
+      const canvas = document.getElementById('game');
+      const scoreEl = document.getElementById('score');
+      const bestEl = document.getElementById('best');
+      const restartBtn = document.getElementById('restart');
+
+      const game = new GameState(4);
+      const renderer = new Renderer(canvas, 4);
+
+      function updateUI(state) {
+        scoreEl.textContent = state.score;
+        bestEl.textContent = state.best;
+      }
+
+      function render() {
+        const state = game.getState();
+        renderer.draw(state);
+        updateUI(state);
+      }
+
+      // Touch input
+      let touchStartX = 0, touchStartY = 0;
+      let touchActive = false;
+
+      canvas.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        touchActive = true;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+      }, { passive: false });
+
+      canvas.addEventListener('touchend', function(e) {
+        if (!touchActive) return;
+        touchActive = false;
+        const dx = e.changedTouches[0].clientX - touchStartX;
+        const dy = e.changedTouches[0].clientY - touchStartY;
+        const absDx = Math.abs(dx);
+        const absDy = Math.abs(dy);
+
+        if (Math.max(absDx, absDy) < 20) return;
+
+        let dir;
+        if (absDx > absDy) {
+          dir = dx > 0 ? 'right' : 'left';
+        } else {
+          dir = dy > 0 ? 'down' : 'up';
+        }
+
+        const result = game.move(dir);
+        render();
+      });
+
+      canvas.addEventListener('touchmove', function(e) {
+        e.preventDefault();
+      }, { passive: false });
+
+      // Keyboard input
+      document.addEventListener('keydown', function(e) {
+        const keyMap = {
+          'ArrowUp': 'up',
+          'ArrowDown': 'down',
+          'ArrowLeft': 'left',
+          'ArrowRight': 'right',
+          'w': 'up', 'W': 'up',
+          's': 'down', 'S': 'down',
+          'a': 'left', 'A': 'left',
+          'd': 'right', 'D': 'right'
+        };
+        const dir = keyMap[e.key];
+        if (dir) {
+          e.preventDefault();
+          game.move(dir);
+          render();
+        }
+      });
+
+      // Restart
+      restartBtn.addEventListener('click', function() {
+        game.init();
+        render();
+      });
+
+      // Resize
+      window.addEventListener('resize', function() {
+        renderer.resize();
+        render();
+      });
+
+      // Initial render
+      render();
+
+      // Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+      }
+    })();
+  </script>
+</body>
+</html>

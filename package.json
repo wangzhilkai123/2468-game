@@ -1,0 +1,23 @@
+{
+  "name": "2468-game",
+  "version": "1.0.0",
+  "description": "A 2048-style number merge puzzle game",
+  "main": "index.html",
+  "scripts": {
+    "cap:init": "npx cap init 2468 com.example.game2468 --web-dir=.",
+    "cap:add": "npx cap add android",
+    "cap:sync": "npx cap sync",
+    "cap:open": "npx cap open android"
+  },
+  "keywords": [
+    "game",
+    "2048",
+    "puzzle"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4"
+  }
+}

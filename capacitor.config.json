@@ -1,0 +1,9 @@
+{
+  "appId": "com.example.game2468",
+  "appName": "2468",
+  "webDir": "www",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  }
+}
