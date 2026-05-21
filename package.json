@@ -1,6 +1,6 @@
 {
   "name": "2468-game",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "A 2048-style number merge puzzle game",
   "main": "index.html",
   "scripts": {
