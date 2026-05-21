@@ -1,4 +1,4 @@
-const COLORS = {
+const COLORS_LIGHT = {
   2:    { bg: '#eee4da', fg: '#776e65' },
   4:    { bg: '#ede0c8', fg: '#776e65' },
   8:    { bg: '#f2b179', fg: '#f9f6f2' },
@@ -14,8 +14,25 @@ const COLORS = {
   8192: { bg: '#3c3a32', fg: '#f9f6f2' }
 };
 
-function tileColor(value) {
-  return COLORS[value] || { bg: '#000000', fg: '#ffffff' };
+const COLORS_DARK = {
+  2:    { bg: '#3a3a3a', fg: '#ccc' },
+  4:    { bg: '#4a4a4a', fg: '#ddd' },
+  8:    { bg: '#c1794f', fg: '#fff' },
+  16:   { bg: '#d5693f', fg: '#fff' },
+  32:   { bg: '#d45237', fg: '#fff' },
+  64:   { bg: '#e04430', fg: '#fff' },
+  128:  { bg: '#c9a73a', fg: '#fff' },
+  256:  { bg: '#c9a42f', fg: '#fff' },
+  512:  { bg: '#c9a01e', fg: '#fff' },
+  1024: { bg: '#c99d0e', fg: '#fff' },
+  2048: { bg: '#e0b800', fg: '#fff' },
+  4096: { bg: '#1a1a1a', fg: '#fff' },
+  8192: { bg: '#1a1a1a', fg: '#fff' }
+};
+
+function tileColor(value, dark) {
+  const map = dark ? COLORS_DARK : COLORS_LIGHT;
+  return map[value] || { bg: dark ? '#000' : '#000', fg: '#fff' };
 }
 
 class Renderer {
@@ -25,7 +42,7 @@ class Renderer {
     this.size = size;
     this.cellSize = 0;
     this.gap = 0;
-    this.animations = [];
+    this.dark = false;
     this.resize();
   }
 
@@ -49,65 +66,38 @@ class Renderer {
     };
   }
 
-  draw(state, oldGrid, merges) {
+  draw(state) {
     const ctx = this.ctx;
     const { grid } = state;
     const d = this.displaySize;
+    const dark = this.dark;
 
-    // Background
-    ctx.fillStyle = '#faf8ef';
+    ctx.fillStyle = dark ? '#1e1e2e' : '#faf8ef';
     ctx.fillRect(0, 0, d, d);
 
-    // Grid background
-    ctx.fillStyle = '#bbada0';
+    ctx.fillStyle = dark ? '#3a3a4a' : '#bbada0';
     this._roundRect(0, 0, d, d, this.gap * 1.5);
     ctx.fill();
 
-    // Cells
     for (let r = 0; r < this.size; r++) {
       for (let c = 0; c < this.size; c++) {
         const { x, y } = this.getCellPos(r, c);
-        ctx.fillStyle = 'rgba(238, 228, 218, 0.35)';
+        ctx.fillStyle = dark ? 'rgba(50,50,60,0.5)' : 'rgba(238, 228, 218, 0.35)';
         this._roundRect(x, y, this.cellSize, this.cellSize, this.cellSize * 0.1);
         ctx.fill();
       }
     }
 
-    // Merge effects
-    const mergeSet = new Set();
-    if (merges) {
-      for (const m of merges) {
-        mergeSet.add(`${m.r},${m.c}`);
-      }
-    }
-
-    // Tiles
     for (let r = 0; r < this.size; r++) {
       for (let c = 0; c < this.size; c++) {
         const val = grid[r][c];
         if (val === 0) continue;
         const { x, y } = this.getCellPos(r, c);
-        const color = tileColor(val);
-        const key = `${r},${c}`;
-        const isNew = mergeSet.has(key);
+        const color = tileColor(val, dark);
 
         ctx.fillStyle = color.bg;
         this._roundRect(x, y, this.cellSize, this.cellSize, this.cellSize * 0.1);
         ctx.fill();
-
-        // Merge pop animation
-        if (isNew) {
-          ctx.save();
-          const cx = x + this.cellSize / 2;
-          const cy = y + this.cellSize / 2;
-          ctx.translate(cx, cy);
-          ctx.scale(1.15, 1.15);
-          ctx.translate(-cx, -cy);
-          ctx.fillStyle = color.bg;
-          this._roundRect(x, y, this.cellSize, this.cellSize, this.cellSize * 0.1);
-          ctx.fill();
-          ctx.restore();
-        }
 
         ctx.fillStyle = color.fg;
         ctx.textAlign = 'center';
@@ -122,18 +112,17 @@ class Renderer {
       }
     }
 
-    // Overlay
     if (state.over) {
-      ctx.fillStyle = 'rgba(238, 228, 218, 0.73)';
+      ctx.fillStyle = dark ? 'rgba(30, 30, 46, 0.8)' : 'rgba(238, 228, 218, 0.73)';
       ctx.fillRect(0, 0, d, d);
-      ctx.fillStyle = '#776e65';
+      ctx.fillStyle = dark ? '#ccc' : '#776e65';
       ctx.font = `bold ${d * 0.08}px "Segoe UI", Arial, sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText('游戏结束', d / 2, d / 2 - 10);
     } else if (state.won) {
       ctx.fillStyle = 'rgba(237, 194, 46, 0.5)';
       ctx.fillRect(0, 0, d, d);
-      ctx.fillStyle = '#f9f6f2';
+      ctx.fillStyle = '#fff';
       ctx.font = `bold ${d * 0.08}px "Segoe UI", Arial, sans-serif`;
       ctx.textAlign = 'center';
       ctx.fillText('恭喜！达到 2048！', d / 2, d / 2 - 10);

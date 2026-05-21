@@ -29,8 +29,13 @@
       </div>
     </div>
     <div class="controls">
-      <span class="desc">滑动屏幕或按方向键</span>
-      <button class="btn" id="restart">新游戏</button>
+      <button class="btn btn-sm" id="undo" disabled>↩ 撤销</button>
+      <span class="desc" id="desc">滑动屏幕或按方向键</span>
+      <div class="toggles">
+        <button class="icon-btn" id="darkBtn" title="夜间模式">🌙</button>
+        <button class="icon-btn" id="soundBtn" title="音效">🔊</button>
+        <button class="btn btn-sm" id="restart">新游戏</button>
+      </div>
     </div>
     <canvas id="game"></canvas>
   </div>
@@ -43,13 +48,36 @@
       const scoreEl = document.getElementById('score');
       const bestEl = document.getElementById('best');
       const restartBtn = document.getElementById('restart');
+      const undoBtn = document.getElementById('undo');
+      const darkBtn = document.getElementById('darkBtn');
+      const soundBtn = document.getElementById('soundBtn');
 
       const game = new GameState(4);
       const renderer = new Renderer(canvas, 4);
 
+      let darkMode = localStorage.getItem('2468-dark') === '1';
+      let soundOn = localStorage.getItem('2468-sound') !== '0';
+
+      function applyDark() {
+        document.body.classList.toggle('dark', darkMode);
+        renderer.dark = darkMode;
+        darkBtn.textContent = darkMode ? '☀️' : '🌙';
+        const meta = document.querySelector('meta[name="theme-color"]');
+        if (meta) meta.content = darkMode ? '#1e1e2e' : '#faf8ef';
+      }
+
+      function applySound() {
+        game.audio.enabled = soundOn;
+        soundBtn.textContent = soundOn ? '🔊' : '🔇';
+      }
+
+      applyDark();
+      applySound();
+
       function updateUI(state) {
         scoreEl.textContent = state.score;
         bestEl.textContent = state.best;
+        undoBtn.disabled = !game.canUndo();
       }
 
       function render() {
@@ -86,7 +114,7 @@
           dir = dy > 0 ? 'down' : 'up';
         }
 
-        const result = game.move(dir);
+        game.move(dir);
         render();
       });
 
@@ -97,14 +125,10 @@
       // Keyboard input
       document.addEventListener('keydown', function(e) {
         const keyMap = {
-          'ArrowUp': 'up',
-          'ArrowDown': 'down',
-          'ArrowLeft': 'left',
-          'ArrowRight': 'right',
-          'w': 'up', 'W': 'up',
-          's': 'down', 'S': 'down',
-          'a': 'left', 'A': 'left',
-          'd': 'right', 'D': 'right'
+          'ArrowUp': 'up', 'ArrowDown': 'down',
+          'ArrowLeft': 'left', 'ArrowRight': 'right',
+          'w': 'up', 'W': 'up', 's': 'down', 'S': 'down',
+          'a': 'left', 'A': 'left', 'd': 'right', 'D': 'right'
         };
         const dir = keyMap[e.key];
         if (dir) {
@@ -112,12 +136,33 @@
           game.move(dir);
           render();
         }
+        if (e.key === 'z' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          if (game.undo()) render();
+        }
       });
 
-      // Restart
+      // Buttons
       restartBtn.addEventListener('click', function() {
         game.init();
         render();
+      });
+
+      undoBtn.addEventListener('click', function() {
+        if (game.undo()) render();
+      });
+
+      darkBtn.addEventListener('click', function() {
+        darkMode = !darkMode;
+        localStorage.setItem('2468-dark', darkMode ? '1' : '0');
+        applyDark();
+        render();
+      });
+
+      soundBtn.addEventListener('click', function() {
+        soundOn = !soundOn;
+        localStorage.setItem('2468-sound', soundOn ? '1' : '0');
+        applySound();
       });
 
       // Resize
